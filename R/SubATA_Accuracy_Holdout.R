@@ -1,10 +1,8 @@
 #' @importFrom stats frequency median
-#' @importFrom utils tail
-AutoATA.Accuracy.Holdin <- function(ata_opt, accryType, h){
+SubATA.Accuracy.Holdout <- function(ata_opt, accryType, HoldoutSet){
   inSample <- ata_opt$actual
-  HoldinSet = utils::tail(inSample, h);
-  ata.error <- HoldinSet - ata_opt$forecast
-  ata.pe <- ata.error / HoldinSet * 100
+  ata.error <- HoldoutSet - ata_opt$forecast
+  ata.pe <- ata.error / HoldoutSet * 100
   if (accryType=="MAE" | accryType=="MdAE"){
     ata.accuracy.insample <- abs(ata.error)
   }else if (accryType=="MSE" | accryType=="MdSE" | accryType=="RMSE"){
@@ -14,12 +12,12 @@ AutoATA.Accuracy.Holdin <- function(ata_opt, accryType, h){
   }else if (accryType=="MAPE" | accryType=="MdAPE"){
     ata.accuracy.insample <- abs(ata.pe)
   }else if (accryType=="sMAPE" | accryType=="sMdAPE"){
-    ata.accuracy.insample <- abs(ata.error)/(abs(HoldinSet) + abs(ata_opt$forecast)) * 200
+    ata.accuracy.insample <- abs(ata.error)/(abs(HoldoutSet) + abs(ata_opt$forecast)) * 200
   }else if (accryType=="MASE"){
-    ata.accuracy.insample <- outMASE(as.double(inSample), HoldinSet, as.double(ata_opt$forecast), as.integer(frequency(inSample)))
+    ata.accuracy.insample <- outMASE(as.double(inSample), HoldoutSet, as.double(ata_opt$forecast), as.integer(frequency(inSample)))
   }else if (accryType=="OWA"){
-    preOWA_first <- abs(ata.error)/(abs(HoldinSet) + abs(ata_opt$forecast)) * 200
-    preOWA_second <- abs(outMASE(as.double(inSample), HoldinSet, as.double(ata_opt$forecast), as.integer(frequency(inSample))))
+    preOWA_first <- abs(ata.error)/(abs(HoldoutSet) + abs(ata_opt$forecast)) * 200
+    preOWA_second <- abs(outMASE(as.double(inSample), HoldoutSet, as.double(ata_opt$forecast), as.integer(frequency(inSample))))
   }else {
   }
 

@@ -1,8 +1,8 @@
-#' @importFrom forecast msts 
+#' @importFrom forecast msts
 #' @importFrom stats frequency ts tsp tsp<- var
-AutoATA.SingleO <- function(X, parP, parQ, model.type, seasonal.test, seasonal.model, seasonal.type, s.frequency, h, accuracy.type,
+SubATA.SingleO <- function(X, parP, parQ, model.type, seasonal.test, seasonal.model, seasonal.type, s.frequency, h, accuracy.type,
                             level.fixed, trend.fixed, trend.search, start.phi, end.phi, size.phi, initial.level, initial.trend, transform.method, lambda, shift, orig.X,
-                            OutSample, seas_attr_set, freqYh, ci.level, negative.forecast, boxcox_attr_set, holdout, partition.h, holdout.adjustedP, holdin)
+                            OutSample, seas_attr_set, freqYh, ci.level, negative.forecast, boxcox_attr_set, holdout, partition.h, holdout.adjustedP, holdin, nmse)
 {
   tspX <- tsp(X)
   firstTspX <- tsp(orig.X)
@@ -35,7 +35,7 @@ AutoATA.SingleO <- function(X, parP, parQ, model.type, seasonal.test, seasonal.m
       seas.type <- seasonal.type
 	  seas.shift <- 0
     }
-  }else { 
+  }else {
     seasonal.model <- "none"
     seas.type <- seasonal.type <- "A"
     seas.lambda <- NULL
@@ -74,9 +74,9 @@ AutoATA.SingleO <- function(X, parP, parQ, model.type, seasonal.test, seasonal.m
     DeSeas <- AdjInSample
     HoldoutSet <- NA
   }
-  ata.output <- AutoATA.Damped(DeSeas, pb = parP, qb = parQ, model.Type = model.type, accuracy.Type = accuracy.type, level.fix = level.fixed, trend.fix = trend.fixed, trend.Search = trend.search, phiStart = start.phi, phiEnd = end.phi, phiSize = size.phi, initialLevel = initial.level, initialTrend = initial.trend, orig_X = AdjInSample, Holdout = holdout, HoldoutSet = HoldoutSet, Adjusted_P = holdout.adjustedP, h = h, Holdin = holdin)
+  ata.output <- SubATA.Damped(DeSeas, pb = parP, qb = parQ, model.Type = model.type, accuracy.Type = accuracy.type, level.fix = level.fixed, trend.fix = trend.fixed, trend.Search = trend.search, phiStart = start.phi, phiEnd = end.phi, phiSize = size.phi, initialLevel = initial.level, initialTrend = initial.trend, orig_X = AdjInSample, Holdout = holdout, HoldoutSet = HoldoutSet, Adjusted_P = holdout.adjustedP, h = h, Holdin = holdin, nmse = nmse)
   ata.output$h <- h
-  ata.output <- AutoATA.Forecast(ata.output, hh=h, initialLevel = initial.level)
+  ata.output <- SubATA.Forecast(ata.output, hh=h, initialLevel = initial.level)
   ata.output$actual <- orig.X
   fit.ata <- ATA.BackTransform(X=ata.output$fitted, tMethod=transform.method, tLambda=lambda, tShift=shift, tbiasadj=boxcox_attr_set$bcBiasAdj, tfvar=ifelse(boxcox_attr_set$bcBiasAdj==FALSE, NULL, var(ata.output$residuals)))
   forecast.ata <- ATA.BackTransform(X=ata.output$forecast, tMethod=transform.method, tLambda=lambda, tShift=shift, tbiasadj=boxcox_attr_set$bcBiasAdj, tfvar=ifelse(boxcox_attr_set$bcBiasAdj==FALSE, NULL, var(ata.output$residuals)))
@@ -106,7 +106,6 @@ AutoATA.SingleO <- function(X, parP, parQ, model.type, seasonal.test, seasonal.m
     ata.output$forecast <- ts(ATA.forecast, frequency = firstTspX[3], start = firstTspX[2] + ifelse(firstTspX[3]>1, 1/firstTspX[3], 1))
   }
   ata.output$residuals <- ata.output$actual - ata.output$fitted
-  accuracy.ata <- ATA.Accuracy(ata.output, OutSample)
   if (holdout == TRUE){
 	ata.output$holdout.training <- ts(ata.output$actual[1:HoldOutLen], frequency = firstTspX[3], start = firstTspX[1])
     ata.output$holdout.validation <- ts(ata.output$actual[(HoldOutLen+1):InsampleLen], frequency = firstTspX[3], start = tsp(ata.output$holdout.training)[2] + ifelse(firstTspX[3]>1, 1/firstTspX[3], 1))
@@ -122,7 +121,6 @@ AutoATA.SingleO <- function(X, parP, parQ, model.type, seasonal.test, seasonal.m
   }else {
     method <- paste("ATA(", my_list$p, "," ,my_list$q, ",", my_list$phi, ")", sep="")
   }
-  my_list$method <- method
   my_list$initial.level <- initial.level
   my_list$initial.trend <- initial.trend
   my_list$level.fixed <- level.fixed
@@ -135,10 +133,31 @@ AutoATA.SingleO <- function(X, parP, parQ, model.type, seasonal.test, seasonal.m
   my_list$bcUpper <- boxcox_attr_set$bcUpper
   my_list$bcBiasAdj <- boxcox_attr_set$bcBiasAdj
   my_list$accuracy.type <- accuracy.type
-  my_list$accuracy <- accuracy.ata
+  my_list$nmse <- nmse
   my_list$is.season <- is.season
   my_list$seasonal.model <- seasonal.model
   my_list$seasonal.type <- seasonal.type
+  if(my_list$q==0){
+    trend_mthd <- "N"
+  }else if (my_list$q!=0 & my_list$phi!=1 & my_list$phi>0){
+    trend_mthd <- paste(my_list$model.type, "d", sep="")
+  }else{
+    trend_mthd <- my_list$model.type
+  }
+  if(my_list$seasonal.model == "none"){
+    seas_mthd <- "N"
+  }else{
+    seas_mthd <- my_list$seasonal.type
+  }
+  method <- paste(method, " (A,", trend_mthd, ",", seas_mthd, ")", sep="")
+  my_list$method <- method
+  my_list$par.specs <- list("p" = my_list$p, "q" = my_list$q, "phi" = my_list$phi,
+                              "trend" = trend_mthd,
+                              "seasonal" = seas_mthd,
+                              "initial_level" = ifelse(my_list$initial.level==FALSE, NA, TRUE),
+                              "initial_trend" = ifelse(my_list$initial.trend==FALSE, NA, TRUE))
+  accuracy.ata <- ATA.Accuracy(my_list, OutSample)
+  my_list$accuracy <- accuracy.ata
   my_list$seasonal.period <- s.frequency
   my_list$seasonal.index <- SeasonalIndex
   my_list$seasonal <- ts(SeasonalActual, frequency = firstTspX[3], start=firstTspX[1])

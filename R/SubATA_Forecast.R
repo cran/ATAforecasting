@@ -1,5 +1,5 @@
 #' @importFrom stats ts tsp tsp<-
-AutoATA.Forecast <- function(ata_output, hh=NULL, initialLevel)
+SubATA.Forecast <- function(ata_output, hh=NULL, initialLevel)
 {
   if (class(ata_output)!="ATA"){
     return("The Input must be 'ATA' object. Please use ATA(x) function to produce 'ATA' object. ATA Forecast was terminated!")

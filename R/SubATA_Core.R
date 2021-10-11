@@ -1,9 +1,8 @@
-AutoATA.Core.Holdout <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend, hh)
+SubATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
 {
   X <- as.numeric(X)
   lenX <- length(X)
   ata.fitted <- rep(NA, lenX)
-  ata.forecast <- rep(NA, hh)
 
   if (initialTrend==TRUE){
     if (mdlType=="A"){
@@ -129,36 +128,6 @@ AutoATA.Core.Holdout <- function(X, pk, qk, phik, mdlType, initialLevel, initial
       T_1 <- NA
     }
   }
-
-  if (initialLevel==TRUE){
-    Xobs <- mean(X)
-  }else {
-    Xobs <- X[lenX]
-  }
-  if (mdlType=="A"){
-    coefpk <- abs(pk/lenX)
-    coefqk <- abs(qk/lenX)
-    S <- coefpk * Xobs + (1-coefpk)*(S_1 + phik * T_1)
-    T <- coefqk * (S-S_1) + (1-coefqk) * (phik * T_1)
-    ata.forecast[1] <- S + (phik * T)
-    phiTotal <- phik
-    for (h in 2:hh){
-      phiTotal <- phiTotal + (phik^h)
-      ata.forecast[h] <- S + (phiTotal * T)
-    }
-  }
-  if (mdlType=="M"){
-    coefpk <- abs(pk/lenX)
-    coefqk <- abs(qk/lenX)
-    S <- coefpk * Xobs + (1-coefpk)* S_1 * (T_1^phik)
-    T <- coefqk * (S/S_1) + (1-coefqk) * (T_1^phik)
-    ata.forecast[1] <- S * (T^phik)
-    phiTotal <- phik
-    for (h in 2:hh){
-      phiTotal <- phiTotal + (phik^h)
-      ata.forecast[h] <- S * (T^phiTotal)
-    }
-  }
-  my_list <- list("actual" = X, "fitted" = ata.fitted, "forecast" = ata.forecast)
+  my_list <- list("actual" = X, "fitted" = ata.fitted)
   return(my_list)
 }

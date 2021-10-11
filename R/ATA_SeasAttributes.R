@@ -24,11 +24,11 @@
 #' @param suroot.test Type of seasonal unit root test to use. Possible values are "correlogram", "seas", "hegy", "ch" and "ocsb".
 #' @param suroot.uroot If TRUE, unit root test for stationary before seasonal unit root test is allowed.
 #' @param uroot.type Specification of the deterministic component in the regression for unit root test. Possible values are "level" and "trend".
-#' @param uroot.alpha Significant level of the unit root test, possible values range from 0.01 to 0.1
+#' @param uroot.alpha Significant level of the unit root test, possible values range from 0.01 to 0.1.
 #' @param suroot.alpha Significant level of the seasonal unit root test, possible values range from 0.01 to 0.1
 #' @param uroot.maxd Maximum number of non-seasonal differences allowed.
 #' @param suroot.maxD Maximum number of seasonal differences allowed.
-#' @param suroot.m Deprecated. Length of seasonal period: frequency of data for nsdiff.
+#' @param suroot.m Deprecated. Length of seasonal period: frequency of data for nsdiffs.
 #' @param uroot.pkg Using \code{urca} or \code{tseries} packages for unit root test. The default value is "urca".
 #' @param multi.period Selection type of multi seasonal period. \code{min} or \code{max} function for selection
 #' @param x13.estimate.maxiter Maximum iteration for X13ARIMA/SEATS estimation
@@ -42,7 +42,7 @@
 #' @seealso \code{forecast}, \code{stlplus}, \code{stR}, \code{\link[stats]{stl}}, \code{\link[stats]{decompose}}, \code{tbats}, \code{seasadj}.
 #'
 #' @export
-ATA.SeasAttr <- function(corrgram.tcrit=1.28, uroot.test="adf", suroot.test="correlogram", suroot.uroot=TRUE, uroot.type="trend", uroot.alpha=0.05, suroot.alpha=0.05, uroot.maxd=2, suroot.maxD=1, suroot.m=NULL, uroot.pkg="tseries", multi.period="min", x13.estimate.maxiter=1500, x13.estimate.tol=1.0e-5, x11.estimate.maxiter=1500, x11.estimate.tol=1.0e-5)
+ATA.SeasAttr <- function(corrgram.tcrit=1.28, uroot.test="adf", suroot.test="correlogram", suroot.uroot=TRUE, uroot.type="level", uroot.alpha=0.05, suroot.alpha=0.05, uroot.maxd=2, suroot.maxD=1, suroot.m=NULL, uroot.pkg="tseries", multi.period="min", x13.estimate.maxiter=1500, x13.estimate.tol=1.0e-5, x11.estimate.maxiter=1500, x11.estimate.tol=1.0e-5)
 {
   if ((uroot.test != "adf" & uroot.test != "pp" & uroot.test != "kpss") | !is.character(uroot.test)){
     warning("Selection method of unit root test must be string. adf, pp or kpss test for searching unit root.")

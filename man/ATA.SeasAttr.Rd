@@ -9,7 +9,7 @@ ATA.SeasAttr(
   uroot.test = "adf",
   suroot.test = "correlogram",
   suroot.uroot = TRUE,
-  uroot.type = "trend",
+  uroot.type = "level",
   uroot.alpha = 0.05,
   suroot.alpha = 0.05,
   uroot.maxd = 2,
@@ -34,7 +34,7 @@ ATA.SeasAttr(
 
 \item{uroot.type}{Specification of the deterministic component in the regression for unit root test. Possible values are "level" and "trend".}
 
-\item{uroot.alpha}{Significant level of the unit root test, possible values range from 0.01 to 0.1}
+\item{uroot.alpha}{Significant level of the unit root test, possible values range from 0.01 to 0.1.}
 
 \item{suroot.alpha}{Significant level of the seasonal unit root test, possible values range from 0.01 to 0.1}
 
@@ -42,7 +42,7 @@ ATA.SeasAttr(
 
 \item{suroot.maxD}{Maximum number of seasonal differences allowed.}
 
-\item{suroot.m}{Deprecated. Length of seasonal period: frequency of data for nsdiff.}
+\item{suroot.m}{Deprecated. Length of seasonal period: frequency of data for nsdiffs.}
 
 \item{uroot.pkg}{Using \code{urca} or \code{tseries} packages for unit root test. The default value is "urca".}
 

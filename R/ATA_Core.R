@@ -9,13 +9,14 @@
 #' If TRUE, ATA Method calculates average of first p value in \code{X}for level.
 #' @param initialTrend If NULL, FALSE is default. If FALSE, ATA Method calculates the qth observation in \code{X(T)-X(T-1)} for trend.
 #' If TRUE, ATA Method calculates average of first q value in \code{X(T)-X(T-1)} for trend.
+#' @param nmse If `accuracy.type == "AMSE"`, `nmse` provides the number of steps for average multistep MSE (`2<=nmse<=30`).
 #'
 #' @return Returns an object of class "\code{ATA}"
-#' 
+#'
 #' @importFrom stats as.ts tsp tsp<-
-#' 
+#'
 #' @export
-ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
+ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend, nmse)
 {
   tsp_X <- tsp(X)
   X <- as.numeric(X)
@@ -26,6 +27,7 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
   ata.fitted <- rep(NA, lenX)
   ata.coefp <- rep(NA, lenX)
   ata.coefq <- rep(NA, lenX)
+  FC <- matrix(NA,nrow=lenX, ncol=nmse)
   S_1 <- NA
   T_1 <- NA
 
@@ -67,7 +69,13 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
-      }
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S + (phiTotal * T)
+        }
+       }
       if (mdlType=="M"){
         ata.coefp[i] <- NA
         ata.coefq[i] <- NA
@@ -77,6 +85,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S * (T^phiTotal)
+        }
       }
     }else if (i<=pk & i<=qk & pk>=qk){
       if (mdlType=="A"){
@@ -88,6 +102,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S + (phiTotal * T)
+        }
       }
       if (mdlType=="M"){
         ata.coefp[i] <- NA
@@ -98,6 +118,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S * (T^phiTotal)
+        }
       }
     }else if (i<=pk & i>qk & pk>=qk){
       if (mdlType=="A"){
@@ -109,6 +135,11 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        phiTotal <- phik
+        for(j in 2:nmse) {
+            phiTotal = phiTotal + (phik^j)
+            FC[i,j] = S + (phiTotal * T)
+        }
       }
       if (mdlType=="M"){
         ata.coefp[i] <- NA
@@ -119,6 +150,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S * (T^phiTotal)
+        }
       }
     }else if (i>pk & i<=qk & pk>=qk){
       Xobs = X[i]
@@ -131,6 +168,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S + (phiTotal * T)
+        }
       }
       if (mdlType=="M"){
         ata.coefp[i] <- coefpk <- abs(pk/i)
@@ -141,6 +184,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S * (T^phiTotal)
+        }
       }
     }else if (i>pk & i>qk & pk>=qk){
       Xobs = X[i]
@@ -153,6 +202,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S + (phiTotal * T)
+        }
       }
       if (mdlType=="M"){
         ata.coefp[i] <- coefpk <- abs(pk/i)
@@ -163,6 +218,12 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
         ata.error[i] <- Xh - FF
         S_1 <- S
         T_1 <- T
+        FC[i,1] <- FF
+        phiTotal <- phik
+        for (j in 2:nmse) {
+            phiTotal <- phiTotal + (phik^j)
+            FC[i,j] <- S * (T^phiTotal)
+        }
       }
     }else {
       ata.coefp[i] <- NA
@@ -185,7 +246,8 @@ ATA.Core <- function(X, pk, qk, phik, mdlType, initialLevel, initialTrend)
   ata.T <- as.ts(ata.T)
   ata.coefp <- as.ts(ata.coefp)
   ata.coefq <- as.ts(ata.coefq)
-  my_list <- list("actual" = X, "fitted" = ata.fitted , "level" = ata.S, "trend" = ata.T, "residuals" = ata.error, "coefp" = ata.coefp, "coefq" = ata.coefq, "p" = pk, "q" = qk, "phi" = phik, "model.type" = mdlType)
+  my_list <- list("actual" = X, "fitted" = ata.fitted , "level" = ata.S, "trend" = ata.T, "residuals" = ata.error, "coefp" = ata.coefp, "coefq" = ata.coefq,
+                  "p" = as.integer(pk), "q" = as.integer(qk), "phi" = signif(phik,6), "model.type" = mdlType, "amse.fc" = FC)
   attr(my_list, 'class') <- "ATA"
   return(my_list)
 }
