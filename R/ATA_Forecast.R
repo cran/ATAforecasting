@@ -2,14 +2,14 @@
 #'
 #' @description \code{ATA.Forecast} is a generic function for forecasting of the ATA Method.
 #'
-#' @param object An \code{ATA} object is required for forecast.
+#' @param object An \code{ata} object is required for forecast.
 #' @param h Number of periods for forecasting.
 #' @param out.sample A numeric vector or time series of class \code{ts} or \code{msts} for out-sample.
 #' @param ci.level Confidence Interval levels for forecasting. Default value is 95.
 #' @param negative.forecast Negative values are allowed for forecasting. Default value is TRUE. If FALSE, all negative values for forecasting are set to 0.
 #' @param print.out Default is TRUE. If FALSE, forecast summary of ATA Method is not shown.
 #'
-#' @return An object of class "\code{ATA}".
+#' @return An object of class \code{ata} and forecast values.
 #'
 #' @author Ali Sabri Taylan and Hanife Taylan Selamlar
 #'
@@ -29,129 +29,96 @@
 #'
 #' @keywords Ata forecast accuracy ts msts
 #'
-#' @importFrom stats cycle frequency ts tsp tsp<- var
+#' @importFrom stats cycle end frequency start ts tsp tsp<- var
 #' @importFrom Rdpack reprompt
 #' @importFrom forecast msts
 #'
 #' @examples
-#' demoATA <- window(fundingTR, start = tsp(fundingTR)[1], end = 2013)
-#' ata.fit <- ATA(demoATA, parPHI = 1, seasonal.test = TRUE, seasonal.model = "decomp")
-#' ATA.plot(ATA.Forecast(ata.fit, h=18))
-#'
+#' trainATA <-  head(touristTR, 84)
+#' ata_fit <- ATA(trainATA, parPHI = 1, seasonal.test = TRUE, seasonal.model = "decomp")
+#' ata_fc <- ATA.Forecast(ata_fit, h=12)
 #'
 #' @export
 ATA.Forecast <- function(object, h=NULL, out.sample=NULL, ci.level=95, negative.forecast=TRUE, print.out = TRUE)
 {
-  y <- object
-  if (class(y)!="ATA"){
-    return("The Input must be 'ATA' object. Please use ATA(x) function to produce 'ATA' object. ATA Forecast was terminated!")
+  if (class(object)!="ata"){
+    stop("The Input must be 'ata' object. Please use ATA() function to produce 'ata' object.")
   }
-  m <- frequency(y$actual)
-  if (is.null(h)){
-    if (m==4){
-      h <- 8
-    }else if (m==5){
-      h <- 10
-    }else if (m==7){
-      h <- 14
-    }else if (m==12){
-      h <- 24
-    }else if (m==24){
-      h <- 48
-    }else {
-      h <- 6
-    }
-    warning(paste("Input forecast horizon has been changed with ", h))
-  }
+  m <- frequency(object$actual)
   if(!is.null(out.sample)){
-    if (length(out.sample)!=h){
-      return("The length of out.sample must be equal h. ATA Forecast was terminated!")
+    if(!is.na(out.sample[1])){
+      h <- length(out.sample)
+      message("Forecast horizon has been set to the length of out.sample.")
+    }
+  }else{
+    if (is.null(h)){
+      if (m==4){
+        h <- 8
+      }else if (m==5){
+        h <- 10
+      }else if (m==7){
+        h <- 14
+      }else if (m==12){
+        h <- 24
+      }else if (m==24){
+        h <- 48
+      }else {
+        h <- 6
+      }
+      message(paste("Input forecast horizon has been changed with ", h))
     }
   }
-  ata.output <- y
-  tsp_y <- tsp(y$actual)
-  new_y <- forecast::msts(y$actual, start=tsp_y[1], seasonal.periods = y$seasonal.period)
-  tsp_ny <- tsp(new_y)
-  fsample <- ts(rep(NA,h), frequency = max(y$seasonal.period), start = tsp_ny[2] + ifelse(tsp_ny[3]>1, 1/tsp_ny[3], 1))
+  tsp_y <- tsp(object$actual)
+  fsample <- forecast::msts(rep(NA,h), start = end(object$actual) + ifelse(tsp_y[3]>1, 1/tsp_y[3], 1), seasonal.periods = object$seasonal.period)
   freqYh <- cycle(fsample)
-  if (is.null(y$transform.method)){
-    if (y$seasonal.model!="decomp" & y$seasonal.type=="M"){
-      seasonal.type <- "A"
-      lambda <- 0
-	  shift <- 0
-      transform.method <- "Box_Cox"
-      bcBiasAdj <- FALSE
-      out.transform <- ATA.Transform(y$seasonal.adjusted, tMethod = transform.method, tLambda = lambda, tShift = shift)       # lambda = 0 for multiplicative model
-	  ata.output$actual <- forecast::msts(out.transform$trfmX, start=tsp_y[1], seasonal.periods = y$seasonal.period)
-	  shift <- out.transform$tShift
-	}else {
-      seasonal.type <- y$seasonal.type
-      lambda <- y$lambda
-	  shift <- y$shift
-      transform.method <- y$transform.method
-      out.transform <- ATA.Transform(y$seasonal.adjusted, tMethod = transform.method, tLambda = lambda, tShift = shift)
-	  ata.output$actual <- forecast::msts(out.transform$trfmX, start=tsp_y[1], seasonal.periods = y$seasonal.period)
-	  shift <- out.transform$tShift
-    }
-  }else {
-      seasonal.type <- y$seasonal.type
-      lambda <- y$lambda
-	  shift <- y$shift
-      transform.method <- y$transform.method
-      out.transform <- ATA.Transform(y$seasonal.adjusted, tMethod=transform.method, tLambda=lambda, tShift = shift)
-	  ata.output$actual <- forecast::msts(out.transform$trfmX, start=tsp_y[1], seasonal.periods = y$seasonal.period)
-	  shift <- out.transform$tShift
-  }
-  if (y$is.season==FALSE & seasonal.type=="A"){
+  if (object$is.season==FALSE & object$seasonal.type=="A"){
     OS_SIValue <- rep(0,times=h)
-  }else if (y$is.season==FALSE & seasonal.type=="M"){
+  }else if (object$is.season==FALSE & object$seasonal.type=="M"){
     OS_SIValue <- rep(1,times=h)
-  }else if (y$is.season==TRUE){
+  }else if (object$is.season==TRUE){
     OS_SIValue <- rep(NA,times=h)
     for (k in 1:h){
-      OS_SIValue[k] <- y$seasonal.index[freqYh[k]]
+      OS_SIValue[k] <- object$seasonal.index[freqYh[k]]
     }
   }else{
   }
-  OS_SIValue <- ATA.Transform(OS_SIValue, tMethod=transform.method, tLambda=lambda, tShift = shift)$trfmX
-  ata.output$level <- forecast::msts(ATA.Transform(y$level, tMethod=transform.method, tLambda=lambda, tShift = shift)$trfmX, start=tsp_y[1], seasonal.periods = y$seasonal.period)
-  ata.output$trend <- forecast::msts(ATA.Transform(y$trend, tMethod=transform.method, tLambda=lambda, tShift = shift)$trfmX, start=tsp_y[1], seasonal.periods = y$seasonal.period)
-  ata.output <- SubATA.Forecast(ata.output, hh=h, initialLevel=ata.output$initial.level)
-  forecast.ata <- ata.output$forecast
-  if(y$seasonal.type=="A"){
-    ATA.forecast <- ATA.BackTransform(X=forecast.ata + OS_SIValue, tMethod=transform.method, tLambda=lambda, tShift = shift, tbiasadj=y$bcBiasAdj, tfvar=ifelse(y$bcBiasAdj==FALSE, NULL, var(y$residuals)))
+  y <- SubATA.Forecast(object, hh = h, initialLevel = object$initial.level)
+  if(object$seasonal.type=="A"){
+    ATA_forecast <- y$forecast + OS_SIValue
   }else {
-    ATA.forecast <- ATA.BackTransform(X=forecast.ata * OS_SIValue, tMethod=transform.method, tLambda=lambda, tShift = shift, tbiasadj=y$bcBiasAdj, tfvar=ifelse(y$bcBiasAdj==FALSE, NULL, var(y$residuals)))
+    ATA_forecast <- y$forecast * OS_SIValue
   }
   if (negative.forecast==TRUE){
-    y$forecast <- ts(ATA.forecast, frequency = tsp_y[3], start = tsp_y[2] + ifelse(tsp_y[3]>1, 1/tsp_y[3], 1))
+    object$forecast <- forecast::msts(ATA_forecast, start = end(object$actual) + ifelse(tsp_y[3]>1, 1/tsp_y[3], 1), seasonal.periods = object$seasonal.period)
   }else {
-    ATA.forecast[ATA.forecast<0] <- 0
-    y$forecast <- ts(ATA.forecast, frequency = tsp_y[3], start = tsp_y[2] + ifelse(tsp_y[3]>1, 1/tsp_y[3], 1))
+    ATA_forecast[ATA_forecast<0] <- 0
+    object$forecast <- forecast::msts(ATA_forecast, start = end(object$actual) + ifelse(tsp_y[3]>1, 1/tsp_y[3], 1), seasonal.periods = object$seasonal.period)
   }
-  y$h <- h
-  accuracy.ata <- ATA.Accuracy(y,out.sample=out.sample)
-  y$accuracy <- accuracy.ata
-  y$out.sample <- ifelse(is.null(out.sample),fsample,out.sample)
-  ci.output <- ATA.CI(object = y, ci.level = ci.level)
-  y$ci.level <- ci.level
+  object$h <- h
+  accuracy.ata <- ATA.Accuracy(object, out.sample = out.sample, print.out = FALSE)
+  object$accuracy <- accuracy.ata
+  object$out.sample <- ifelse(is.null(out.sample), fsample, out.sample)
+  ci.output <- ATA.CI(object = object, ci.level = ci.level)
+  object$ci.level <- ci.level
   if (negative.forecast==TRUE){
-    y$forecast.lower <- ci.output$forecast.lower
-    y$forecast.upper <- ci.output$forecast.upper
+    object$forecast.lower <- ci.output$forecast.lower
+    object$forecast.upper <- ci.output$forecast.upper
   }else {
     ci_low <- ci.output$forecast.lower
     ci_up <- ci.output$forecast.upper
     ci_low[ci_low<0] <- 0
     ci_up[ci_up<0] <- 0
-    y$forecast.lower <- ci_low
-    y$forecast.upper <- ci_up
+    object$forecast.lower <- ci_low
+    object$forecast.upper <- ci_up
   }
-  attr(y, "class") <- "ATA"
-  print_out <- cbind(y$forecast.lower, y$forecast, y$forecast.upper)
-  colnames(print_out) <- c("lower", "forecast", "upper")
+  attr(object, "class") <- "ata"
   if (print.out==TRUE) {
+    opscipen <- options("scipen" = 100, "digits"=4)
+      on.exit(options(opscipen))
+    print_out <- cbind(object$forecast.lower, object$forecast, object$forecast.upper)
+    colnames(print_out) <- c("lower", "forecast", "upper")
     print(print_out)
   }
   gc()
-  return(y)
+  return(object)
 }

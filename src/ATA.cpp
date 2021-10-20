@@ -1,142 +1,235 @@
 #include <RcppArmadillo.h>
-// [[Rcpp::depends(RcppArmadillo)]]
 
+// [[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 using namespace arma;
 
-// [[Rcpp::export]]
-double NaiveSD(NumericVector insmp, int frqx){
-  int n = insmp.size();
-  NumericVector fNaiveSD(n);
-  double sum = 0.0;
-  double naiveAcc = 0.0;
-  int i,j,jx,fn;
 
+// [[Rcpp::export]]
+double NaiveSD_Accry(NumericVector train_set, int frqx, int accry){
+  int n = train_set.size();
+  int j, fn;
+  double accmeasure=0.0;
+  NumericVector fitsn(n);
+  NumericVector ITAcc(n);
+  NumericVector ITErr(n);
+  NumericVector ITsmape(n);
+  NumericVector pe(n);
   fn = frqx - 1;
   for(j = 0; j < n; j++){
-    if (j <= fn)
-      fNaiveSD[j] = 0;
-    else
-    {
-      jx = j - frqx;
-      fNaiveSD[j] = insmp[jx];
-    }
+    if(fn < j)
+      fitsn[j] = train_set[j - frqx];
   }
-  for(i = frqx; i < n; i++)
-    sum += fabs(insmp[i] - fNaiveSD[i]);
-  naiveAcc = 1.0 * sum / (n - frqx);
-  return naiveAcc;
+  ITErr = train_set - fitsn;
+  pe = (ITErr / fitsn) * 100.0;
+  ITsmape = (abs(ITErr) / (abs(train_set) + abs(fitsn))) * 200.0;
+  if ((accry==1) | (accry==2) | (accry==12) | (accry==13))
+    ITAcc = abs(ITErr);
+  else if ((accry==3) | (accry==4) | (accry==11) | (accry==15))
+    ITAcc = pow(ITErr, 2.0);
+  else if ((accry==5) | (accry==6) )
+    ITAcc = pe;
+  else if ((accry==7) | (accry==8) )
+    ITAcc = abs(pe);
+  else if ((accry==9) | (accry==10) )
+    ITAcc = ITsmape;
+  else
+    NumericVector ITAcc(n-1,NumericVector::get_na());
+  if ((accry==1) | (accry==3) | (accry==5) | (accry==7) | (accry==9) )
+    accmeasure = mean(ITAcc);
+  else if ((accry==2) | (accry==4) | (accry==6) | (accry==8) | (accry==10) )
+    accmeasure = median(ITAcc);
+  else if (accry==11)
+    accmeasure = sqrt(mean(ITAcc));
+  else if (accry==12)
+    accmeasure = 1.0;
+  else if (accry==13)
+    accmeasure = 1.0 * (mean(ITsmape) + mean(ITAcc)) / 2;
+  else if (accry==15)
+    accmeasure = ITAcc.size() * log(sum(ITAcc));
+  else if (accry==16)
+    accmeasure = var(ITErr);
+  else
+    accmeasure = NA_REAL;
+  return accmeasure;
 }
 
 // [[Rcpp::export]]
-double NaiveSDholdin(NumericVector insmp, int frqx, int frqh){
-  int n = insmp.size();
-  NumericVector fNaiveSD(n-frqh);
-  double sum = 0.0;
-  double naiveAcc = 0.0;
-  int i,j,jx,fn;
-
-  fn = frqx - frqh - 1;
-  for(j = 0; j < (n-frqh); j++){
-    if (j <= fn)
-      fNaiveSD[j] = 0;
+double NaiveSV_Accry(NumericVector train_set, NumericVector frqx, int accry ){
+  int n = train_set.size();
+  int p = frqx.length();
+  int z, j, fn;
+  double accmeasure=0.0;
+  NumericVector fitsn(n);
+  NumericVector deseas(n);
+  NumericVector tfitsn(n);
+  NumericVector ITAcc(n);
+  NumericVector ITErr(n);
+  NumericVector ITsmape(n);
+  NumericVector pe(n);
+  deseas = train_set;
+      for(z = 0; z < p; z++){
+        fn = frqx[z] - 1;
+        for(j = 0; j < n; j++){
+          if(fn < j)
+            fitsn[j] = deseas[j - frqx[z]];
+          tfitsn[j] = tfitsn[j] + fitsn[j];
+        }
+        deseas = deseas - fitsn;
+      }
+    ITErr = train_set - tfitsn;
+    pe = (ITErr / tfitsn) * 100.0;
+    ITsmape = (abs(ITErr) / (abs(train_set) + abs(tfitsn))) * 200.0;
+    if ((accry==1) | (accry==2) | (accry==12) | (accry==13))
+      ITAcc = abs(ITErr);
+    else if ((accry==3) | (accry==4) | (accry==11) | (accry==15))
+      ITAcc = pow(ITErr, 2.0);
+    else if ((accry==5) | (accry==6) )
+      ITAcc = pe;
+    else if ((accry==7) | (accry==8) )
+      ITAcc = abs(pe);
+    else if ((accry==9) | (accry==10) )
+      ITAcc = ITsmape;
     else
-    {
-      jx = j - frqx;
-      fNaiveSD[j] = insmp[jx];
-    }
-  }
-  for(i = frqx; i < (n-frqh); i++)
-    sum += fabs(insmp[i] - fNaiveSD[i]);
-  naiveAcc = 1.0 * sum / (n - frqx - frqh);
-  return naiveAcc;
+      NumericVector ITAcc(n-1,NumericVector::get_na());
+    if ((accry==1) | (accry==3) | (accry==5) | (accry==7) | (accry==9) )
+      accmeasure = mean(ITAcc);
+    else if ((accry==2) | (accry==4) | (accry==6) | (accry==8) | (accry==10) )
+      accmeasure = median(ITAcc);
+    else if (accry==11)
+      accmeasure = sqrt(mean(ITAcc));
+    else if (accry==12)
+      accmeasure = 1.0;
+    else if (accry==13)
+      accmeasure = 1.0 * (mean(ITsmape) + mean(ITAcc)) / 2;
+    else if (accry==15)
+      accmeasure = ITAcc.size() * log(sum(ITAcc));
+    else if (accry==16)
+      accmeasure = var(ITErr);
+    else
+      accmeasure = NA_REAL;
+    return accmeasure;
 }
 
 // [[Rcpp::export]]
-double outMASE(NumericVector insmp, NumericVector outsmp, NumericVector frcst, int frqx){
-  int n = insmp.size();
-  int m = outsmp.size();
-  NumericVector fNaiveSD(n);
-  double sum = 0.0;
-  double pMASE, sumMASE, oMASE = 0.0;
-  int i,j,jx,fn;
-
+double NaiveSD_Accry_hin(NumericVector train_set, double frqx, int accry, int h){
+  int n = train_set.size();
+  int j, fn;
+  double accmeasure=0.0;
+  NumericVector fitsn(n);
+  NumericVector deseas(n);
+  NumericVector ITAcc(n);
+  NumericVector ITErr(n);
+  NumericVector ITsmape(n);
+  NumericVector pe(n);
+  NumericVector hITAcc(h);
+  NumericVector hITErr(h);
+  NumericVector hITsmape(h);
   fn = frqx - 1;
   for(j = 0; j < n; j++){
-    if (j <= fn)
-      fNaiveSD[j] = 0;
-    else
-    {
-      jx = j - frqx;
-      fNaiveSD[j] = insmp[jx];
+    if(fn < j)
+        fitsn[j] = train_set[j - frqx];
     }
-  }
-  for(i = frqx; i < n; i++)
-    sum += fabs(insmp[i] - fNaiveSD[i]);
-  pMASE = 1.0 * sum / (n - frqx);
-  for(i = 1; i < m; i++)
-    sumMASE += fabs(outsmp[i]-frcst[i]);
-  oMASE = 1.0 * sumMASE / (m-1);
-  return 1.0 * oMASE / pMASE;
-}
-
-// [[Rcpp::export]]
-double inMASE(NumericVector insmp, NumericVector fitsmp, int frqx){
-  int n = insmp.size();
-  int m = fitsmp.size();
-  NumericVector fNaiveSD(n);
-  double sum = 0.0;
-  double pMASE, sumMASE, nMASE = 0.0;
-  int i,j,jx,fn;
-
-  fn = frqx - 1;
-  for(j = 0; j < n; j++){
-    if (j <= fn)
-      fNaiveSD[j] = 0;
-    else
-    {
-      jx = j - frqx;
-      fNaiveSD[j] = insmp[jx];
-    }
-  }
-  for(i = frqx; i < n; i++)
-    sum += fabs(insmp[i]-fNaiveSD[i]);
-  pMASE = 1.0 * sum / (n - frqx);
-  for(i = 1; i < m; i++)
-    sumMASE += fabs(insmp[i]-fitsmp[i]);
-  nMASE = 1.0 * sumMASE / (m-1);
-  return 1.0 * nMASE / pMASE;
+  ITErr = train_set - fitsn;
+  pe = (ITErr / fitsn) * 100.0;
+  ITsmape = (abs(ITErr) / (abs(train_set) + abs(fitsn))) * 200.0;
+  if ((accry==1) | (accry==2) | (accry==12) | (accry==13))
+    ITAcc = abs(ITErr);
+  else if ((accry==3) | (accry==4) | (accry==11) | (accry==15))
+    ITAcc = pow(ITErr, 2.0);
+  else if ((accry==5) | (accry==6) )
+    ITAcc = pe;
+  else if ((accry==7) | (accry==8) )
+    ITAcc = abs(pe);
+  else if ((accry==9) | (accry==10) )
+    ITAcc = ITsmape;
+  else
+    NumericVector ITAcc(n-1,NumericVector::get_na());
+  hITAcc = head(ITAcc, (n - h));
+  hITErr = head(ITErr, (n - h));
+  hITsmape = head(ITsmape, (n - h));
+  if ((accry==1) | (accry==3) | (accry==5) | (accry==7) | (accry==9) )
+    accmeasure = mean(hITAcc);
+  else if ((accry==2) | (accry==4) | (accry==6) | (accry==8) | (accry==10) )
+    accmeasure = median(hITAcc);
+  else if (accry==11)
+    accmeasure = sqrt(mean(hITAcc));
+  else if (accry==12)
+    accmeasure = 1.0;
+  else if (accry==13)
+    accmeasure = 1.0 * (mean(hITsmape) + mean(hITAcc)) / 2;
+  else if (accry==15)
+    accmeasure = hITAcc.size() * log(sum(hITAcc));
+  else if (accry==16)
+    accmeasure = var(hITErr);
+  else
+    accmeasure = NA_REAL;
+  return accmeasure;
 }
 
 
 // [[Rcpp::export]]
-double inMASEholdin(NumericVector insmp, NumericVector fitsmp, int frqx, int frqh){
-  int n = insmp.size();
-  int m = fitsmp.size();
-  NumericVector fNaiveSD(n-frqh);
-  double sum = 0.0;
-  double pMASE, sumMASE, nMASE = 0.0;
-  int i,j,jx,fn;
-
-  fn = frqx - frqh - 1;
-  for(j = 0; j < (n-frqh); j++){
-    if (j <= fn)
-      fNaiveSD[j] = 0;
+double NaiveSV_Accry_hin(NumericVector train_set, NumericVector frqx, int accry, int h){
+  int n = train_set.size();
+  int p = frqx.length();
+  int z, j, fn;
+  double accmeasure=0.0;
+  NumericVector fitsn(n);
+  NumericVector deseas(n);
+  NumericVector tfitsn(n);
+  NumericVector ITAcc(n);
+  NumericVector ITErr(n);
+  NumericVector ITsmape(n);
+  NumericVector pe(n);
+  NumericVector hITAcc(h);
+  NumericVector hITErr(h);
+  NumericVector hITsmape(h);
+  deseas = train_set;
+      for(z = 0; z < p; z++){
+        fn = frqx[z] - 1;
+        for(j = 0; j < n; j++){
+          if(fn < j)
+            fitsn[j] = deseas[j - frqx[z]];
+          tfitsn[j] = tfitsn[j] + fitsn[j];
+        }
+        deseas = deseas - fitsn;
+      }
+    ITErr = train_set - tfitsn;
+    pe = (ITErr / tfitsn) * 100.0;
+    ITsmape = (abs(ITErr) / (abs(train_set) + abs(tfitsn))) * 200.0;
+    if ((accry==1) | (accry==2) | (accry==12) | (accry==13))
+      ITAcc = abs(ITErr);
+    else if ((accry==3) | (accry==4) | (accry==11) | (accry==15))
+      ITAcc = pow(ITErr, 2.0);
+    else if ((accry==5) | (accry==6) )
+      ITAcc = pe;
+    else if ((accry==7) | (accry==8) )
+      ITAcc = abs(pe);
+    else if ((accry==9) | (accry==10) )
+      ITAcc = ITsmape;
     else
-    {
-      jx = j - frqx;
-      fNaiveSD[j] = insmp[jx];
-    }
-  }
-  for(i = frqx; i < (n-frqh); i++)
-    sum += fabs(insmp[i]-fNaiveSD[i]);
-  pMASE = 1.0 * sum / (n - frqx - frqh);
-  for(i = 1; i < (m-frqh); i++)
-    sumMASE += fabs(insmp[i]-fitsmp[i]);
-  nMASE = 1.0 * sumMASE / (m-1-frqh);
-  return 1.0 * nMASE / pMASE;
+      NumericVector ITAcc(n-1,NumericVector::get_na());
+    hITAcc = head(ITAcc, (n - h));
+    hITErr = head(ITErr, (n - h));
+    hITsmape = head(ITsmape, (n - h));
+    if ((accry==1) | (accry==3) | (accry==5) | (accry==7) | (accry==9) )
+      accmeasure = mean(hITAcc);
+    else if ((accry==2) | (accry==4) | (accry==6) | (accry==8) | (accry==10) )
+      accmeasure = median(hITAcc);
+    else if (accry==11)
+      accmeasure = sqrt(mean(hITAcc));
+    else if (accry==12)
+      accmeasure = 1.0;
+    else if (accry==13)
+      accmeasure = 1.0 * (mean(hITsmape) + mean(hITAcc)) / 2;
+    else if (accry==15)
+      accmeasure = hITAcc.size() * log(sum(hITAcc));
+    else if (accry==16)
+      accmeasure = var(hITErr);
+    else
+      accmeasure = NA_REAL;
+    return accmeasure;
 }
-
 
 // [[Rcpp::export]]
 double meanIT(NumericVector x, int t){
@@ -147,8 +240,9 @@ double meanIT(NumericVector x, int t){
 }
 
 // [[Rcpp::export]]
-double SubATACore(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZAC, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, int IZFRQ, int IZNMSE) {
+double SubATACore(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZAC, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, NumericVector IZFRQ, int IZNMSE) {
   int LENZ = IAZ.size();
+  int f = IZFRQ.length();
   NumericVector IZT_0(LENZ);
   NumericVector IZFIT(LENZ);
   double coefpk, coefqk, Xobs, Xlag, S, T, S_1, T_1, T_0;
@@ -389,28 +483,36 @@ double SubATACore(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, i
   ITErr = IAZ - IZFIT;
   pe = (ITErr / IAZ) * 100.0;
   ITsmape = (abs(ITErr) / (abs(IZFIT) + abs(IAZ))) * 200.0;
-  if ( (IZAC==1) | (IZAC==2) | (IZAC==12) | (IZAC==13) )
+  if ((IZAC==1) | (IZAC==2) | (IZAC==12) | (IZAC==13))
     ITAcc = abs(ITErr);
-  else if ( (IZAC==3) | (IZAC==4) | (IZAC==11) | (IZAC==15))
+  else if ((IZAC==3) | (IZAC==4) | (IZAC==11) | (IZAC==15))
     ITAcc = pow(ITErr, 2.0);
-  else if ( (IZAC==5) | (IZAC==6) )
+  else if ((IZAC==5) | (IZAC==6) )
     ITAcc = pe;
-  else if ( (IZAC==7) | (IZAC==8) )
+  else if ((IZAC==7) | (IZAC==8) )
     ITAcc = abs(pe);
-  else if ( (IZAC==9) | (IZAC==10) )
+  else if ((IZAC==9) | (IZAC==10) )
     ITAcc = ITsmape;
   else
     NumericVector ITAcc(LENZ-1,NumericVector::get_na());
-  if ( (IZAC==1) | (IZAC==3) | (IZAC==5) | (IZAC==7) | (IZAC==9) )
+  if ((IZAC==1) | (IZAC==3) | (IZAC==5) | (IZAC==7) | (IZAC==9) )
     accmeasure = mean(ITAcc);
-  else if ( (IZAC==2) | (IZAC==4) | (IZAC==6) | (IZAC==8) | (IZAC==10) )
+  else if ((IZAC==2) | (IZAC==4) | (IZAC==6) | (IZAC==8) | (IZAC==10) )
     accmeasure = median(ITAcc);
   else if (IZAC==11)
     accmeasure = sqrt(mean(ITAcc));
-  else if (IZAC==12)
-    accmeasure = inMASE(IAZ, IZFIT, IZFRQ);
-  else if (IZAC==13)
-    accmeasure = 1.0 * ((mean(ITsmape)/NaiveSD(IAZ, IZFRQ)) + (inMASE(IAZ, IZFIT, IZFRQ)/NaiveSD(IAZ, IZFRQ))) / 2;
+  else if (IZAC==12){
+    if(f > 1)
+      accmeasure = mean(ITAcc) / NaiveSV_Accry(IAZ, IZFRQ, 1);
+    else
+      accmeasure = mean(ITAcc) / NaiveSD_Accry(IAZ, IZFRQ[0], 1);
+  }
+  else if (IZAC==13){
+      if(f > 1)
+        accmeasure = 1.0 * ((mean(ITsmape) / NaiveSV_Accry(IAZ, IZFRQ, 9)) + (mean(ITAcc) / NaiveSV_Accry(IAZ, IZFRQ, 1))) / 2;
+      else
+        accmeasure = 1.0 * ((mean(ITsmape) / NaiveSD_Accry(IAZ, IZFRQ[0], 9)) + (mean(ITAcc) / NaiveSD_Accry(IAZ, IZFRQ[0], 1))) / 2;
+  }
   else if (IZAC==14){
       for(h = 0; h < IZNMSE - 1; h++)
       {
@@ -424,12 +526,12 @@ double SubATACore(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, i
   else if (IZAC==16)
     accmeasure = var(ITErr);
   else
-    accmeasure = 0;
+    accmeasure = NA_REAL;
   return accmeasure;
 }
 
 // [[Rcpp::export]]
-NumericVector SubATADamped(NumericVector IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, NumericVector IXTA_0, NumericVector IXTM_0, int IXFRQ, int IXNMSE){
+NumericVector SubATADamped(NumericVector IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, NumericVector IXTA_0, NumericVector IXTM_0, NumericVector IXFRQ, int IXNMSE){
   int LENX = IAX.size();
   int  	d_opt_p;
   int  	d_opt_q;
@@ -459,7 +561,7 @@ NumericVector SubATADamped(NumericVector IAX, int IXP, int IXQ, int IXMO, int IX
 
   if (IXLF==1) {
     d_opt_q = 0;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(i = 1; i <= LENX; i++) {
@@ -486,7 +588,7 @@ NumericVector SubATADamped(NumericVector IAX, int IXP, int IXQ, int IXMO, int IX
   }
   else if (IXTF==1) {
     d_opt_q = 1;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(i = 1; i <= LENX; i++) {
@@ -525,7 +627,7 @@ NumericVector SubATADamped(NumericVector IAX, int IXP, int IXQ, int IXMO, int IX
   else {
     if ( (IXP==-1) & (IXQ==-1) ) {
       d_opt_q = 0;
-      d_opt_p = 0;
+      d_opt_p = 1;
       for(m = mstart; m <= mfinish; m++) {
         for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
           for(i = 1; i <= LENX; i++) {
@@ -545,7 +647,7 @@ NumericVector SubATADamped(NumericVector IAX, int IXP, int IXQ, int IXMO, int IX
     }
     else if ( (IXP==-1) & (IXQ!=-1) ) {
       d_opt_q = IXQ;
-      d_opt_p = 0;
+      d_opt_p = 1;
       for(m = mstart; m <= mfinish; m++) {
         for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
           for(i = 1; i <= LENX; i++) {
@@ -653,9 +755,10 @@ NumericVector SubATA(arma::mat IAX, int IXP, int IXQ, int IXMO, int IXAC, int IX
 
 
 // [[Rcpp::export]]
-double SubATACoreHoldout(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZAC, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, int IZFRQ, NumericVector IAZout) {
+double SubATACoreHoldout(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZAC, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, NumericVector IZFRQ, NumericVector IAZout) {
   int LENZ = IAZ.size();
   int LENH = IAZout.size();
+  int f = IZFRQ.length();
   NumericVector IZT_0(LENZ);
   NumericVector IZFIT(LENZ);
   double coefpk, coefqk, Xobs, Xlag, phiTotal, S, T, S_1, T_1, T_0;
@@ -858,21 +961,29 @@ double SubATACoreHoldout(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int 
     accmeasureOUT = median(ITAccOUT);
   else if (IZAC==11)
     accmeasureOUT = sqrt(mean(ITAccOUT));
-  else if (IZAC==12)
-    accmeasureOUT = outMASE(IAZ, IAZout, IZFRCST, IZFRQ);
-  else if (IZAC==13)
-    accmeasureOUT = 1.0 * ((mean(ITsmapeOUT)/NaiveSD(IAZ, IZFRQ)) + (outMASE(IAZ, IAZout, IZFRCST, IZFRQ)/NaiveSD(IAZ, IZFRQ))) / 2;
+  else if (IZAC==12){
+    if(f > 1)
+      accmeasureOUT = mean(ITAccOUT) / NaiveSV_Accry(IAZ, IZFRQ, 1);
+    else
+      accmeasureOUT = mean(ITAccOUT) / NaiveSD_Accry(IAZ, IZFRQ[0], 1);
+  }
+  else if (IZAC==13){
+      if(f > 1)
+        accmeasureOUT = 1.0 * ((mean(ITsmapeOUT) / NaiveSV_Accry(IAZ, IZFRQ, 9)) + (mean(ITAccOUT) / NaiveSV_Accry(IAZ, IZFRQ, 1))) / 2;
+      else
+        accmeasureOUT = 1.0 * ((mean(ITsmapeOUT) / NaiveSD_Accry(IAZ, IZFRQ[0], 9)) + (mean(ITAccOUT) / NaiveSD_Accry(IAZ, IZFRQ[0], 1))) / 2;
+  }
   else if (IZAC==15)
     accmeasureOUT = ITAccOUT.size() * log(sum(ITAccOUT));
   else if (IZAC==16)
     accmeasureOUT = var(ITFrcstErr);
   else
-    accmeasureOUT = 0;
+    accmeasureOUT = NA_REAL;
   return accmeasureOUT;
 }
 
 // [[Rcpp::export]]
-NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, NumericVector IXTA_0, NumericVector IXTM_0, int IXFRQ, NumericVector IAXout){
+NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, NumericVector IXTA_0, NumericVector IXTM_0, NumericVector IXFRQ, NumericVector IAXout){
   int LENX = IAX.size();
   int  	d_opt_p;
   int  	d_opt_q;
@@ -902,7 +1013,7 @@ NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO,
 
   if (IXLF==1) {
     d_opt_q = 0;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(i = 1; i <= LENX; i++) {
@@ -929,7 +1040,7 @@ NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO,
   }
   else if (IXTF==1) {
     d_opt_q = 1;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(i = 1; i <= LENX; i++) {
@@ -947,7 +1058,7 @@ NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO,
   }
   else if (IXTS==1) {
     d_opt_q = 1;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(j = 1; j <= LENX; j++) {
@@ -967,7 +1078,7 @@ NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO,
   }else {
     if ( (IXP==-1) & (IXQ==-1) ) {
       d_opt_q = 0;
-      d_opt_p = 0;
+      d_opt_p = 1;
       for(m = mstart; m <= mfinish; m++) {
         for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
           for(i = 1; i <= LENX; i++) {
@@ -987,7 +1098,7 @@ NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO,
     }
     else if ( (IXP==-1) & (IXQ!=-1) ) {
       d_opt_q = IXQ;
-      d_opt_p = 0;
+      d_opt_p = 1;
       for(m = mstart; m <= mfinish; m++) {
         for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
           for(i = 1; i <= LENX; i++) {
@@ -1044,7 +1155,7 @@ NumericVector SubATADampedHoldout(NumericVector IAX, int IXP, int IXQ, int IXMO,
 
 
 // [[Rcpp::export]]
-NumericVector SubATAHoldout(arma::mat IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, arma::mat IXTA_0, arma::mat IXTM_0, NumericVector IXSMO, NumericVector IXST, int max_smo, int max_st, int IXFRQ, NumericVector IAXout){
+NumericVector SubATAHoldout(arma::mat IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, arma::mat IXTA_0, arma::mat IXTM_0, NumericVector IXSMO, NumericVector IXST, int max_smo, int max_st, NumericVector IXFRQ, NumericVector IAXout){
   int  d_opt_p;
   int  d_opt_q;
   double  d_opt_phi;
@@ -1097,7 +1208,7 @@ NumericVector SubATAHoldout(arma::mat IAX, int IXP, int IXQ, int IXMO, int IXAC,
 
 
 // [[Rcpp::export]]
-NumericVector ATAHoldoutForecast(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, int IZFRQ, int LENH) {
+NumericVector ATAHoldoutForecast(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, NumericVector IZFRQ, int LENH) {
   int LENZ = IAZ.size();
   NumericVector IZT_0(LENZ);
   NumericVector IZFIT(LENZ);
@@ -1278,8 +1389,9 @@ NumericVector ATAHoldoutForecast(NumericVector IAZ, int IZP, int IZQ, double IZP
 
 
 // [[Rcpp::export]]
-double SubATACoreHoldhin(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZAC, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, int IZFRQ, int IZH, int IZNMSE) {
+double SubATACoreHoldhin(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int IZMO, int IZAC, int IZIL, int IZIT, NumericVector IZTA_0, NumericVector IZTM_0, NumericVector IZFRQ, int IZH, int IZNMSE) {
   int LENZ = IAZ.size();
+  int f = IZFRQ.length();
   NumericVector IZT_0(LENZ);
   NumericVector IZFIT(LENZ);
   double coefpk, coefqk, Xobs, Xlag, S, T, S_1, T_1, T_0;
@@ -1293,6 +1405,7 @@ double SubATACoreHoldhin(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int 
   NumericVector ITsmape(LENZ);
   NumericVector hITAcc(IZH);
   NumericVector hITErr(IZH);
+  NumericVector hITsmape(IZH);
   NumericVector hFC(IZH);
   NumericVector FC_c(LENZ);
   arma::mat FC(LENZ, IZNMSE);
@@ -1536,16 +1649,25 @@ double SubATACoreHoldhin(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int 
     NumericVector ITAcc(LENZ-1,NumericVector::get_na());
   hITAcc = tail(ITAcc, IZH);
   hITErr = tail(ITErr, IZH);
+  hITsmape = tail(ITsmape, IZH);
   if ( (IZAC==1) | (IZAC==3) | (IZAC==5) | (IZAC==7) | (IZAC==9) )
     accmeasure = mean(hITAcc);
   else if ( (IZAC==2) | (IZAC==4) | (IZAC==6) | (IZAC==8) | (IZAC==10) )
     accmeasure = median(hITAcc);
   else if (IZAC==11)
     accmeasure = sqrt(mean(hITAcc));
-  else if (IZAC==12)
-    accmeasure = inMASEholdin(IAZ, IZFIT, IZFRQ, IZH);
-  else if (IZAC==13)
-    accmeasure = 1.0 * ((mean(tail(ITsmape, IZH))/NaiveSDholdin(IAZ, IZFRQ, IZH)) + (inMASEholdin(IAZ, IZFIT, IZFRQ, IZH)/NaiveSDholdin(IAZ, IZFRQ, IZH))) / 2;
+  else if (IZAC==12){
+    if(f > 1)
+      accmeasure = mean(hITAcc) / NaiveSV_Accry_hin(IAZ, IZFRQ, 1, IZH);
+    else
+      accmeasure = mean(hITAcc) / NaiveSD_Accry_hin(IAZ, IZFRQ[0], 1, IZH);
+  }
+  else if (IZAC==13){
+      if(f > 1)
+        accmeasure = 1.0 * ((mean(hITsmape) / NaiveSV_Accry_hin(IAZ, IZFRQ, 9, IZH)) + (mean(hITAcc) / NaiveSV_Accry_hin(IAZ, IZFRQ, 1, IZH))) / 2;
+      else
+        accmeasure = 1.0 * ((mean(hITsmape) / NaiveSD_Accry_hin(IAZ, IZFRQ[0], 9, IZH)) + (mean(hITAcc) / NaiveSD_Accry_hin(IAZ, IZFRQ[0], 1, IZH))) / 2;
+  }
   else if (IZAC==14){
         for(h = 0; h < IZNMSE - 1; h++)
         {
@@ -1565,7 +1687,7 @@ double SubATACoreHoldhin(NumericVector IAZ, int IZP, int IZQ, double IZPHI, int 
 }
 
 // [[Rcpp::export]]
-NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, NumericVector IXTA_0, NumericVector IXTM_0, int IXFRQ, int IXH, int IXNMSE){
+NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, NumericVector IXTA_0, NumericVector IXTM_0, NumericVector IXFRQ, int IXH, int IXNMSE){
   int LENX = IAX.size();
   int  	d_opt_p;
   int  	d_opt_q;
@@ -1595,7 +1717,7 @@ NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO,
 
   if (IXLF==1) {
     d_opt_q = 0;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(i = 1; i <= LENX; i++) {
@@ -1622,7 +1744,7 @@ NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO,
   }
   else if (IXTF==1) {
     d_opt_q = 1;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(i = 1; i <= LENX; i++) {
@@ -1640,7 +1762,7 @@ NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO,
   }
   else if (IXTS==1) {
     d_opt_q = 1;
-    d_opt_p = 0;
+    d_opt_p = 1;
     for(m = mstart; m <= mfinish; m++) {
       for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
         for(j = 1; j <= LENX; j++) {
@@ -1661,7 +1783,7 @@ NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO,
   else {
     if ( (IXP==-1) & (IXQ==-1) ) {
       d_opt_q = 0;
-      d_opt_p = 0;
+      d_opt_p = 1;
       for(m = mstart; m <= mfinish; m++) {
         for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
           for(i = 1; i <= LENX; i++) {
@@ -1681,7 +1803,7 @@ NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO,
     }
     else if ( (IXP==-1) & (IXQ!=-1) ) {
       d_opt_q = IXQ;
-      d_opt_p = 0;
+      d_opt_p = 1;
       for(m = mstart; m <= mfinish; m++) {
         for(k = IXPHIS; k < IXPHIE+IXPHISS; k = k+IXPHISS) {
           for(i = 1; i <= LENX; i++) {
@@ -1737,7 +1859,7 @@ NumericVector SubATADampedHoldhin(NumericVector IAX, int IXP, int IXQ, int IXMO,
 
 
 // [[Rcpp::export]]
-NumericVector SubATAHoldhin(arma::mat IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, arma::mat IXTA_0, arma::mat IXTM_0, NumericVector IXSMO, NumericVector IXST, int max_smo, int max_st, int IXFRQ, int IXH, int IXNMSE){
+NumericVector SubATAHoldhin(arma::mat IAX, int IXP, int IXQ, int IXMO, int IXAC, int IXLF, int IXTF, int IXTS, double IXPHIS, double IXPHIE, double IXPHISS, int IXIL, int IXIT, arma::mat IXTA_0, arma::mat IXTM_0, NumericVector IXSMO, NumericVector IXST, int max_smo, int max_st, NumericVector IXFRQ, int IXH, int IXNMSE){
   int  d_opt_p;
   int  d_opt_q;
   double  d_opt_phi;

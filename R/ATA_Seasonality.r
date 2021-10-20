@@ -1,6 +1,6 @@
 #' Seasonality Tests for The ATAforecasting
 #'
-#' @description This function is a class of seasonality tests using  \code{corrgram.test} from ATAforecasting package, \code{ndiffs} and \code{nsdiffs} functions from forecast package.
+#' @description This function is a class of seasonality tests using  \code{corrgram_test} from ATAforecasting package, \code{ndiffs} and \code{nsdiffs} functions from forecast package.
 #' Also, this function is modified version of \code{ndiffs} and \code{nsdiffs} written by Hyndman et al. \code{forecast} package.
 #' Please review manual and vignette documents of latest \code{forecast} package. According to \code{forecast} package,
 #' \code{ndiffs} and \code{nsdiffs} functions to estimate the number of differences required to make a given time series stationary.
@@ -33,7 +33,7 @@
 #' @keywords ata ADF Canova-Hansen correlogram HEGY KPSS Phillips-Perron OCSB seasonal unit-root
 #'
 #' @references
-#' 
+#'
 #' #'\insertRef{dickey1979}{ATAforecasting}
 #'
 #' #'\insertRef{said1984}{ATAforecasting}
@@ -65,7 +65,7 @@ ATA.Seasonality <- function(input, ppy, attr_set)
   }else {
     test <- attr_set$suroot.test
     if (test=="correlogram"){
-      test_seasonal <- corrgram.test(input, ppy, attr_set)
+      test_seasonal <- corrgram_test(input, ppy, attr_set)
     }else {
       if (length(ppy)>1){
         if (attr_set$multi.period=="max"){
@@ -84,7 +84,7 @@ ATA.Seasonality <- function(input, ppy, attr_set)
         if (uroot.pkg=="urca") {
           d <- forecast::ndiffs(input, alpha=uroot.alpha, test=uroot.test, type=uroot.type, max.d=uroot.maxd)
         }else {
-          d <- ndiffs.tseries(input, alpha=uroot.alpha, test=uroot.test, max.d=uroot.maxd)
+          d <- ndiffs_tseries(input, alpha=uroot.alpha, test=uroot.test, max.d=uroot.maxd)
         }
         if (d > 0){
           input <- diff(input, differences=d, lag=1)
@@ -104,8 +104,8 @@ ATA.Seasonality <- function(input, ppy, attr_set)
 }
 
 #' @importFrom forecast ndiffs nsdiffs
-#' @importFrom stats acf 
-corrgram.test <- function(input, ppy, attr_set)
+#' @importFrom stats acf
+corrgram_test <- function(input, ppy, attr_set)
 {
   if (max(ppy)==1){
     test_seasonal <- FALSE
@@ -127,7 +127,7 @@ corrgram.test <- function(input, ppy, attr_set)
     if (uroot.pkg=="urca") {
       d <- forecast::ndiffs(input, alpha=uroot.alpha, test=uroot.test, type=uroot.type, max.d=uroot.maxd)
     }else {
-      d <- ndiffs.tseries(input, alpha=uroot.alpha, test=uroot.test, max.d=uroot.maxd)
+      d <- ndiffs_tseries(input, alpha=uroot.alpha, test=uroot.test, max.d=uroot.maxd)
     }
     if (d > 0){
       input <- diff(input, differences=d, lag=1)
@@ -152,40 +152,10 @@ corrgram.test <- function(input, ppy, attr_set)
 }
 
 
-#' Find Number of Differences Required for a Stationary Series
-#'
-#' @description Number of differences required for a stationary series using \code{tseries} package.
-#' This function is also modified and combined version of \code{ndiffs} \code{forecast} and \code{tseries} packages.
-#' Functions to estimate the number of differences required to make a given
-#' time series stationary using \code{tseries} package. 
-#' \code{ndiffs.tseries} estimates the number of first differences necessary.
-#' Please review manual and vignette documents of latest \code{tseries} package.
-#' \code{ndiffs.tseries} uses unit root tests to determine the number of differences required for time series to be made trend stationary. Several different tests are available:
-#' \itemize{
-#' 	\item {uroot.test = 'adf'}			: the Augmented Dickey-Fuller test is used.
-#' 	\item {uroot.test = 'pp'}			: the Phillips-Perron test is used. In both of these cases, the null hypothesis is that \code{x} has a unit root against a stationary root alternative. Then the test returns the least number of differences required to fail the test at the level \code{alpha}.
-#' 	\item {uroot.test = 'kpss'}			: the KPSS test is used with the null hypothesis that \code{x} has a stationary root against a unit-root alternative. Then the test returns the least number of differences required to pass the test at the level \code{alpha}.
-#' }
-#'
-#' @param x A univariate time series
-#' @param alpha Level of the test, possible values range from 0.01 to 0.1.
-#' @param test Type of unit root test to use
-#' @param max.d Maximum number of non-seasonal differences allowed
-#'
-#' @return An integer indicating the number of differences required for stationarity.
-#'
-#' @author Ali Sabri Taylan and Hanife Taylan Selamlar
-#'
-#' @seealso \code{\link{ndiffs}} \code{\link{adf.test}} \code{\link{kpss.test}} \code{\link{pp.test}}
-#'
-#' @keywords ts stationary
-#'
 #' @importFrom stats acf na.omit
 #' @importFrom forecast is.constant
 #' @importFrom tseries adf.test kpss.test pp.test
-#'
-#' @export
-ndiffs.tseries <- function(x, alpha = 0.05, test = c("kpss","adf","pp"), max.d=2)
+ndiffs_tseries <- function(x, alpha = 0.05, test = c("kpss","adf","pp"), max.d=2)
 {
   #ndiffs function using tseries package
   test <- match.arg(test)
