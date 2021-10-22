@@ -1,4 +1,4 @@
-1e09ebc1c2f3f8acd124799ffa062317 *DESCRIPTION
+aab5fc31cd20f7b3e4cb0476e4dbe25d *DESCRIPTION
 bb528bfe3727f9998731e50d8685afd5 *NAMESPACE
 f20c1ca6f1d548ec8378f304152700bf *R/ATA.R
 0e27098300d56a2fc4c3961c0f1b3a5d *R/ATA_Accuracy.R
@@ -20,14 +20,14 @@ b28e68d6c5930ac3cf0b10f44245a489 *R/ATAforecasting-package.R
 4a2ea4d724705771b78e113fa113ef4d *R/SubATA_Core_Holdout.R
 32071202b55ecfc50edd610d31146d5c *R/SubATA_Damped.R
 a4710807bfc2c01221c22460f729b02c *R/SubATA_Forecast.R
-ba13ec1c83b5cf1bf186ffe8f9a14af4 *R/SubATA_Multiple.R
-7c95f0c2692fce0d17d6b12adafe03d0 *R/SubATA_MultipleO.R
+0ed1a140993768847dfce64cb1ee5afd *R/SubATA_Multiple.R
+405bc750802ba54be9395371a58cf6b0 *R/SubATA_MultipleO.R
 2a339a23dbbab07acee08e8ee5592a52 *R/SubATA_Single.R
 cb82e33bf2e659c5ad27ef16775c598c *R/SubATA_SingleO.R
 22f5d1a3cfd69641b6499ca3cb373d37 *R/SubATA_Transform.R
 eccd43d4c182a99e13f52d0b896db06f *R/data.R
 30ff50f6b7797643dd3671a83528a3a7 *README.md
-7c8f5b00ec0a7270a4c66eaaaa85a936 *build/partial.rdb
+fd8a0036616a8a2bb4f2c7f5ba0c4a60 *build/partial.rdb
 297b7c2bd8a7f8c6ab46732845cadc7c *data/fundingTR.RData
 85123f33c5c5abed03486aaf9d8cfb78 *data/touristTR.RData
 dcf859a15a0a7d698c4e4dec304d0195 *inst/REFERENCES.bib
