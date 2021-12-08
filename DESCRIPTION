@@ -1,9 +1,9 @@
 Package: ATAforecasting
 Type: Package
-Title: Automatic Time Series Analysis and Forecasting Using the Ata
+Title: Automatic Time Series Analysis and Forecasting using the Ata
         Method
-Version: 0.0.55
-Date: 2021-10-21
+Version: 0.0.56
+Date: 2021-12-08
 Authors@R: c(
   person("Ali Sabri", "Taylan", email="alisabritaylan@gmail.com", role=c("aut", "cre", "cph"), comment = c(ORCID = "0000-0001-9514-934X")),
   person("Hanife", "Taylan Selamlar", role=c("aut", "cph"), comment = c(ORCID = "0000-0002-4091-884X")),
@@ -33,6 +33,6 @@ Author: Ali Sabri Taylan [aut, cre, cph]
   Hanife Taylan Selamlar [aut, cph]
     (<https://orcid.org/0000-0002-4091-884X>),
   Guckan Yapar [aut, ths, cph] (<https://orcid.org/0000-0002-0971-6676>)
-Packaged: 2021-10-21 07:17:17 UTC; astaylan
+Packaged: 2021-12-08 19:45:11 UTC; astaylan
 Repository: CRAN
-Date/Publication: 2021-10-22 14:30:05 UTC
+Date/Publication: 2021-12-08 21:10:13 UTC
