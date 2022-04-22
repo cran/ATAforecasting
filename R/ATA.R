@@ -395,21 +395,21 @@ ATA <- function(X, Y = NULL,
 
   Qlen <- length(parQ)
   Plen <- length(parP)
-  if (class(parP) =="character" & parP!="opt"){
+  if (inherits(parP, "character") & parP!="opt"){
     stop("p value must be integer and between 1 and length of input. ATAforecasting was terminated!")
-  }else if ((class(parP)=="numeric" |class(parP)=="integer") & Plen>1 & (max(parP)>length(X))){
+  }else if ((inherits(parP, "numeric") | inherits(parP, "integer")) & Plen>1 & (max(parP)>length(X))){
     stop("p value must be integer and between 1 and length of input. ATAforecasting was terminated!")
   }else{
   }
-  if (class(parQ)=="character" & parQ!="opt"){
+  if (inherits(parQ, "character") & parQ!="opt"){
     stop("p value must be integer and between 0 and p. ATAforecasting was terminated!")
-  }else if ((class(parP)=="numeric" |class(parP)=="integer") & Qlen>1 & (max(parQ)>=max(parP))){
+  }else if ((inherits(parQ, "numeric") | inherits(parQ, "integer")) & Qlen>1 & (max(parQ)>=max(parP))){
     stop("q value must be integer and between 0 and p. ATAforecasting was terminated!")
   }else{
   }
-  if (class(parPHI)=="character" & parPHI!="opt"){
+  if (inherits(parPHI, "character") & parPHI!="opt"){
     stop("phi value must be numeric and between 0 and 1. ATAforecasting was terminated!")
-  }else if ((class(parPHI)=="numeric" |class(parPHI)=="integer") & parPHI<0 & parPHI>1 & length(parPHI)>1){
+  }else if ((inherits(parPHI, "numeric") | inherits(parPHI, "integer")) & parPHI<0 & parPHI>1 & length(parPHI)>1){
     stop("phi value must be numeric and between 0 and 1. ATAforecasting was terminated!")
   }
   if (!is.null(seasonal.type)){
@@ -462,10 +462,10 @@ ATA <- function(X, Y = NULL,
       stop("Transform Method value must be string. Please select a valid Box-Cox transformation technique. ATAforecasting was terminated!")
     }
   }
-  if (class(seas_attr_set)!="ataoptim"){
+  if (!inherits(seas_attr_set, "ataoptim")){
     stop("Attributes set for unit root and seasonality tests are not suitable set. ATAforecasting was terminated!")
   }
-  if (class(boxcox_attr_set)!="ataoptim"){
+  if (!inherits(boxcox_attr_set, "ataoptim")){
     stop("Attributes set for Box-Cox transformation are not suitable set. ATAforecasting was terminated!")
   }
 
@@ -479,13 +479,14 @@ ATA <- function(X, Y = NULL,
     h <- length(Y)
   }else {
     if (!is.null(train_test_split)){
-      part_h <- as.integer(ifelse(train_test_split > 0 & train_test_split < 1, floor(length(main_set) * train_test_split), train_test_split))
-      test_len <- length(main_set)- part_h
-      train_len <- length(main_set)
-      main_set <- train_set <- main_set[1:test_len]
-      train_set <- forecast::msts(train_set, start = start(X), seasonal.periods = s.frequency)
-      test_set <- main_set[(test_len+1):train_len]
+      test_len <- part_h <- as.integer(ifelse(train_test_split > 0 & train_test_split < 1, floor(length(main_set) * train_test_split), train_test_split))
+      mainset_len <- length(main_set)
+      train_len <- mainset_len - test_len
+      test_set <- main_set[(train_len+1):mainset_len]
       test_set <- forecast::msts(test_set, start = end(train_set) - ifelse(tspX[3]>1, (part_h - 1) * (1/tspX[3]), (part_h - 1) * 1), seasonal.periods = s.frequency)
+      main_set <- train_set <- main_set[1:train_len]
+      train_set <- forecast::msts(train_set, start = start(main_set), seasonal.periods = s.frequency)
+      main_set <- forecast::msts(main_set, start = start(main_set), seasonal.periods = s.frequency)
       h <- length(test_set)
     }else {
       m <- max(s.frequency)
